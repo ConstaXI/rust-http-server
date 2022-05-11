@@ -17,10 +17,10 @@ impl Request {
     }
 }
 
-impl<'buf> TryFrom<&[u8]> for Request<'buf> {
+impl<'buf> TryFrom<&'buf [u8]> for Request<'buf> {
     type Error = ParseError;
 
-    fn try_from(buf: &[u8]) -> Result<Self, Self::Error> {
+    fn try_from(buf: &'buf [u8]) -> Result<Request<'buf>, Self::Error> {
         let request = str::from_utf8(buf)?;
 
         let (method, request) = get_next_word(request).ok_or(ParseError::InvalidRequest)?;
@@ -41,7 +41,7 @@ impl<'buf> TryFrom<&[u8]> for Request<'buf> {
         }
 
         Ok(Self {
-            path: path,
+            path,
             query_string,
             method
         })
