@@ -4,14 +4,16 @@ use std::error::Error;
 use std::fmt::{Debug, Display, Formatter, Result as FmtResult};
 use std::str;
 use std::str::Utf8Error;
+use super::{QueryString};
 
+#[derive(Debug)]
 pub struct Request<'buf> {
     path: &'buf str,
-    query_string: Option<&'buf str>,
+    query_string: Option<QueryString<'buf>>,
     method: Method,
 }
 
-impl Request {
+impl<'buf> Request<'buf> {
     fn from_byte_array(buf: &[u8]) -> Result<Self, String> {
         unimplemented!()
     }
@@ -28,7 +30,7 @@ impl<'buf> TryFrom<&'buf [u8]> for Request<'buf> {
         let (protocol, _) = get_next_word(request).ok_or(ParseError::InvalidRequest)?;
 
         if protocol != "HTTP/1.1" {
-            return Err(ParseError::InvalidProtocol)
+            return Err(ParseError::InvalidProtocol);
         }
 
         let method: Method = method.parse()?;
@@ -36,14 +38,14 @@ impl<'buf> TryFrom<&'buf [u8]> for Request<'buf> {
         let mut query_string = None;
 
         if let Some(i) = path.find('?') {
-            query_string = Some(&path[i + 1..]);
+            query_string = Some(QueryString::from(&path[i + 1..]));
             path = &path[..i];
         }
 
         Ok(Self {
             path,
             query_string,
-            method
+            method,
         })
     }
 }
@@ -51,7 +53,7 @@ impl<'buf> TryFrom<&'buf [u8]> for Request<'buf> {
 fn get_next_word(request: &str) -> Option<(&str, &str)> {
     for (i, c) in request.chars().enumerate() {
         if c == ' ' || c == '\r' {
-            return Some((&request[..i], &request[i + 1..]))
+            return Some((&request[..i], &request[i + 1..]));
         }
     }
 
